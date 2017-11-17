@@ -2,7 +2,8 @@
 
 vpc=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -s http://169.254.169.254/latest/meta-data/mac)/vpc-id)
 
-if ! aws ec2 describe-security-groups --output text --filters Name=vpc-id,Values=$vpc,Name=group-name,Values=forward-proxy | grep -q . ; then
+sgid=$(aws ec2 describe-security-groups --output text --filters Name=vpc-id,Values=$vpc,Name=group-name,Values=forward-proxy | head -1 | awk '{ print $3 }')
+if [ -z $sgid ] ; then
   sgid=$(aws ec2 create-security-group --description forward-proxy --group-name forward-proxy --vpc-id $vpc --output text)
   aws ec2 authorize-security-group-ingress --group-id $sgid --protocol tcp --port 3128 --cidr 0.0.0.0/0
 fi
@@ -14,4 +15,38 @@ if ! aws ec2 describe-images --filter Name=name,Values=forward-proxy --output te
   done
 fi
 
-PROVIDERS_AWSEC2_INSTANCE_IMAGEID=$(aws ec2 describe-images --filter Name=name,Values=forward-proxy --output text | head -1 | awk '{ print $6 }' ) scrapoxy start tools/docker/config.js -d
+PROVIDERS_AWSEC2_INSTANCE_IMAGEID=$(aws ec2 describe-images --filter Name=name,Values=forward-proxy --output text | head -1 | awk '{ print $6 }' ) 
+subnet=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -s http://169.254.169.254/latest/meta-data/mac)/subnet-id)
+
+cat > ./conf.json <<EOF
+{
+    "commander": {
+        "password": "${COMMANDER_PASSWORD}"
+    },
+    "instance": {
+        "port": 3128,
+        "scaling": {
+            "min": 1,
+            "max": 2
+        }
+    },
+    "providers": {
+        "type": "awsec2",
+        "awsec2": {
+            "accessKeyId": "${AWS_ACCESS_KEY_ID}",
+            "secretAccessKey": "${AWS_SECRET_ACCESS_KEY}",
+            "region": "${AWS_DEFAULT_REGION}",
+            "instance": {
+                "InstanceType": "${PROVIDERS_AWSEC2_INSTANCE_INSTANCETYPE}",
+                "ImageId": "${PROVIDERS_AWSEC2_INSTANCE_IMAGEID}",
+                "SecurityGroups": [
+                    "${sgid}"
+                ],
+                "SubnetId": "${subnet}"
+            }
+        }
+    }
+}
+EOF
+
+scrapoxy start conf.json -d
