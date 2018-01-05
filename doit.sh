@@ -1,8 +1,30 @@
 #!/bin/sh -xe
 
+finish() {
+    if [ ! -z $sgid ]; then
+        inprog=0
+        while [ $inprog -lt 50 ] && ! aws ec2 delete-security-group --group-id $sgid ; do
+            echo DELETE_IN_PROGRESS...
+            let inprog=iprog+1
+            sleep 10
+        done
+    fi
+}
+
+killchild() {
+    trap '' TERM
+    if [ ! -z $pid ]; then
+        kill -TERM $pid
+    fi
+    false # -e makes it go to finish
+}
+
+trap finish EXIT
+trap killchild TERM INT TERM HUP
+
 vpc=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -s http://169.254.169.254/latest/meta-data/mac)/vpc-id)
 
-sgid=$(aws ec2 describe-security-groups --output text --filters Name=vpc-id,Values=$vpc,Name=group-name,Values=forward-proxy | head -1 | awk '{ print $3 }')
+sgid=$(aws ec2 describe-security-groups --output text --filters Name=vpc-id,Values=$vpc Name=group-name,Values=forward-proxy | head -1 | awk '{ print $3 }')
 if [ -z $sgid ] ; then
   sgid=$(aws ec2 create-security-group --description forward-proxy --group-name forward-proxy --vpc-id $vpc --output text)
   aws ec2 authorize-security-group-ingress --group-id $sgid --protocol tcp --port 3128 --cidr 0.0.0.0/0
@@ -39,7 +61,7 @@ cat > ./conf.json <<EOF
             "instance": {
                 "InstanceType": "${PROVIDERS_AWSEC2_INSTANCE_INSTANCETYPE}",
                 "ImageId": "${PROVIDERS_AWSEC2_INSTANCE_IMAGEID}",
-                "SecurityGroups": [
+                "SecurityGroupIds": [
                     "${sgid}"
                 ],
                 "SubnetId": "${subnet}"
@@ -49,4 +71,6 @@ cat > ./conf.json <<EOF
 }
 EOF
 
-scrapoxy start conf.json -d
+scrapoxy start conf.json -d &
+pid=$!
+wait "$pid"
