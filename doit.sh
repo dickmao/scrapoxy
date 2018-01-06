@@ -5,7 +5,7 @@ finish() {
         inprog=0
         while [ $inprog -lt 50 ] && ! aws ec2 delete-security-group --group-id $sgid ; do
             echo DELETE_IN_PROGRESS...
-            let inprog=iprog+1
+            let inprog=inprog+1
             sleep 10
         done
     fi
