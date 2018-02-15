@@ -97,9 +97,9 @@ module.exports = class Master {
             const proxy_req = http.request(proxyOpts);
 
             proxy_req.on('error', (err) => {
-                winston.error('[Master] Error: request error from request (%s %s on instance %s):', req.method, req.url, instance.toString(), err);
+                winston.error('[Master] Error: request error from target (%s %s on instance %s):', req.method, req.url, instance.toString(), err);
 
-                return writeEnd(res, 500, `[Master] Error: request error from request (${req.method} ${req.url} on instance ${instance.toString()}): ${err.toString()}`);
+x                return writeEnd(res, 500, `[Master] Error: request error from target (${req.method} ${req.url} on instance ${instance.toString()}): ${err.toString()}`);
             });
 
             // Start timer
