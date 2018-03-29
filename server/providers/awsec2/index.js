@@ -18,7 +18,7 @@ module.exports = class ProviderAWSEC2 {
         this._instancePort = instancePort;
 
         this.name = 'awsec2';
-        this._vpc = '';
+        this._vpcid = '';
 
         const metadata = new AWS.MetadataService();
         metadata.request('/latest/meta-data/mac', (err, mac) => {
@@ -26,7 +26,7 @@ module.exports = class ProviderAWSEC2 {
                 metadata.request(`/latest/meta-data/network/interfaces/${mac}/$mac/vpc-id`,
                                  (err0, vpcid) => {
                                      if (!err0) {
-                                         this._vpc = vpcid;
+                                         this._vpcid = vpcid;
                                      }
                                  });
             }
@@ -76,13 +76,13 @@ module.exports = class ProviderAWSEC2 {
 
         function describeInstances() {
             return new Promise((resolve, reject) => {
-                if (!this._vpc) {
+                if (!this._vpcid) {
                     reject('serious');
                 }
                 else {
                     self._ec2.describeInstances(
                         {Filters: [
-                            {Name: 'vpc-id', Values: [`${this._vpc}`]},
+                            {Name: 'vpc-id', Values: [`${this._vpcid}`]},
                         ]}, (err, data) => {
                             if (err) {
                                 return reject(err);
