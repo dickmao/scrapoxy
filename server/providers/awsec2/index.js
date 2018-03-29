@@ -24,7 +24,7 @@ module.exports = class ProviderAWSEC2 {
         metadata.request('/latest/meta-data/mac', (err, mac) => {
             if (!err) {
                 winston.debug('[ProviderAWSEC2] hey: Got the mac %s', mac);
-                metadata.request(`/latest/meta-data/network/interfaces/${mac}/vpc-id`,
+                metadata.request(`/latest/meta-data/network/interfaces/macs/${mac}/vpc-id`,
                                  (err0, vpcid) => {
                                      if (!err0) {
                                          winston.debug('[ProviderAWSEC2] hey: Got the vpc %s', vpcid);
