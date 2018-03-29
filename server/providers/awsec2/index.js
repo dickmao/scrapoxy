@@ -18,7 +18,19 @@ module.exports = class ProviderAWSEC2 {
         this._instancePort = instancePort;
 
         this.name = 'awsec2';
+        this._vpc = '';
 
+        const metadata = new AWS.MetadataService();
+        metadata.request('/latest/meta-data/mac', (err, mac) => {
+            if (!err) {
+                metadata.request(`/latest/meta-data/network/interfaces/${mac}/$mac/vpc-id`,
+                                 (err0, vpcid) => {
+                                     if (!err0) {
+                                         this._vpc = vpcid;
+                                     }
+                                 });
+            }
+        });
         const opts = _.pick(this._config, ['accessKeyId', 'secretAccessKey', 'region']);
         this._ec2 = new AWS.EC2(opts);
     }
@@ -64,18 +76,26 @@ module.exports = class ProviderAWSEC2 {
 
         function describeInstances() {
             return new Promise((resolve, reject) => {
-                self._ec2.describeInstances({}, (err, data) => {
-                    if (err) {
-                        return reject(err);
-                    }
+                if (!this._vpc) {
+                    reject('serious');
+                }
+                else {
+                    self._ec2.describeInstances(
+                        {Filters: [
+                            {Name: 'vpc-id', Values: [`${this._vpc}`]},
+                        ]}, (err, data) => {
+                            if (err) {
+                                return reject(err);
+                            }
 
-                    const instances = _(data.Reservations)
-                        .map('Instances')
-                        .flatten()
-                        .value();
+                            const instances = _(data.Reservations)
+                                  .map('Instances')
+                                  .flatten()
+                                  .value();
 
-                    resolve(instances);
-                });
+                            resolve(instances);
+                        });
+                }
             });
         }
 

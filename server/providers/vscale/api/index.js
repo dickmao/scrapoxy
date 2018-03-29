@@ -1,6 +1,8 @@
 'use strict';
 
+ /*eslint-disable no-unused-vars */
 const _ = require('lodash'),
+ /*eslint-enable no-unused-vars */
     Promise = require('bluebird'),
     https = require('https'),
     url = require('url');
