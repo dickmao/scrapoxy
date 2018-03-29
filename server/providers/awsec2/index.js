@@ -76,13 +76,13 @@ module.exports = class ProviderAWSEC2 {
 
         function describeInstances() {
             return new Promise((resolve, reject) => {
-                if (!this._vpcid) {
+                if (!self._vpcid) {
                     reject('serious');
                 }
                 else {
                     self._ec2.describeInstances(
                         {Filters: [
-                            {Name: 'vpc-id', Values: [`${this._vpcid}`]},
+                            {Name: 'vpc-id', Values: [`${self._vpcid}`]},
                         ]}, (err, data) => {
                             if (err) {
                                 return reject(err);
