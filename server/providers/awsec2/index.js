@@ -203,6 +203,7 @@ module.exports = class ProviderAWSEC2 {
 
     createInstances(count) {
         winston.debug('[ProviderAWSEC2] createInstances: count=%d', count);
+        const self = this;
 
         return new Promise((resolve, reject) => {
             this._ec2.describeInstances(
