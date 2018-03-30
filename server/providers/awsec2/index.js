@@ -205,8 +205,11 @@ module.exports = class ProviderAWSEC2 {
         winston.debug('[ProviderAWSEC2] createInstances: count=%d', count);
 
         return new Promise((resolve, reject) => {
-            this._ec2.describeInstances({}, (errDescribe, dataDescribe) => {
-                if (errDescribe) {
+            this._ec2.describeInstances(
+                {Filters: [
+                    {Name: 'vpc-id', Values: [`${self._vpcid}`]},
+                ]}, (errDescribe, dataDescribe) => {
+                    if (errDescribe) {
                     return reject(errDescribe);
                 }
 
