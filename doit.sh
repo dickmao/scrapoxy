@@ -49,7 +49,7 @@ cat > ./conf.json <<EOF
         "port": 3128,
         "scaling": {
             "min": 1,
-            "max": 2
+            "max": 3
         }
     },
     "providers": {
